@@ -24,7 +24,12 @@ import {
   Phone,
   Mail,
   CreditCard,
-  Stethoscope
+  Stethoscope,
+  Sparkles,
+  FileCheck,
+  UserCheck,
+  Activity,
+  Shield
 } from 'lucide-react'
 
 interface ExtractedData {
@@ -172,15 +177,41 @@ export function UploadReferral() {
       setExtractedData(extractedData)
       setStep('review')
       
+      // Show appropriate success message based on extraction method
+      let successMessage = `Patient information extracted with ${result.confidence || 85}% confidence`
+      if (result.extractionMethod === 'regex') {
+        successMessage += ' (using fallback extraction)'
+      } else if (result.extractionMethod === 'emergency') {
+        successMessage = 'Basic extraction completed - please review and complete missing fields'
+      }
+      
+      // Show retry information if available
+      if (result.retryCount && result.retryCount > 0) {
+        successMessage += ` (completed after ${result.retryCount} retry${result.retryCount > 1 ? 's' : ''})`
+      }
+      
       toast({
         title: "Extraction Complete!",
-        description: `Patient information extracted with ${result.confidence || 85}% confidence`,
+        description: successMessage,
       })
     } catch (error) {
       console.error('PDF extraction error:', error)
+      
+      // Provide more specific error messages
+      let errorMessage = "Failed to extract patient information from PDF"
+      if (error instanceof Error) {
+        if (error.message.includes('503') || error.message.includes('overloaded')) {
+          errorMessage = "AI service is temporarily overloaded. The system will retry automatically, or you can manually enter the information."
+        } else if (error.message.includes('timeout')) {
+          errorMessage = "Processing timed out. Please try again or enter information manually."
+        } else {
+          errorMessage = error.message
+        }
+      }
+      
       toast({
         title: "Extraction Failed",
-        description: error instanceof Error ? error.message : "Failed to extract patient information from PDF",
+        description: errorMessage,
         variant: "destructive"
       })
       setStep('review') // Allow manual entry
@@ -310,36 +341,74 @@ export function UploadReferral() {
   }
 
   const renderUploadStep = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <Upload className="h-5 w-5" />
-          <span>Upload Referral</span>
+    <Card className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 shadow-2xl">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
+            <Upload className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <span className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
+              Upload Referral Document
+            </span>
+            <p className="text-sm text-slate-600 dark:text-slate-400 font-normal mt-1">
+              AI-powered document processing
+            </p>
+          </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-          <div className="space-y-4">
-            <FileText className="h-12 w-12 text-gray-400 mx-auto" />
-            <div>
-              <h3 className="text-lg font-medium">Upload PDF Referral Letter</h3>
-              <p className="text-gray-500">Select a PDF file to extract patient information automatically</p>
-            </div>
-            <div className="space-y-2">
-              <Button onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
-                {isUploading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Choose PDF File
-                  </>
-                )}
-              </Button>
-              <p className="text-xs text-gray-500">Maximum file size: 10MB</p>
+      <CardContent className="space-y-6">
+        <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300" />
+          <div className="relative border-2 border-dashed border-slate-300/50 dark:border-slate-600/50 rounded-2xl p-12 text-center bg-gradient-to-br from-slate-50/50 to-white/50 dark:from-slate-800/50 dark:to-slate-900/50 backdrop-blur-sm hover:border-blue-400/50 dark:hover:border-blue-500/50 transition-all duration-300">
+            <div className="space-y-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-2xl" />
+                <div className="relative w-20 h-20 mx-auto bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
+                    <Upload className="h-10 w-10 text-white" />
+                  </div>
+              </div>
+              <div className="space-y-3">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                  Upload PDF Referral Letter
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400 max-w-md mx-auto">
+                  Our AI will automatically extract patient information with high accuracy
+                </p>
+              </div>
+              <div className="space-y-4">
+                <Button 
+                  onClick={() => fileInputRef.current?.click()} 
+                  disabled={isUploading}
+                  className="relative px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+                      <span>Processing...</span>
+                    </>
+                  ) : (
+                    <>  
+                      <Upload className="h-5 w-5 mr-3" />
+                      <span>Choose PDF File</span>
+                    </>
+                  )}
+                </Button>
+                <div className="flex items-center justify-center gap-6 text-sm text-slate-500 dark:text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    <span>Secure Upload</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FileCheck className="h-4 w-4" />
+                    <span>Max 10MB</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    <span>AI Powered</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -355,30 +424,99 @@ export function UploadReferral() {
   )
 
   const renderExtractStep = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Extracting Patient Information</span>
+    <Card className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 shadow-2xl">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-br from-emerald-500 to-blue-600 rounded-xl shadow-lg">
+            <Activity className="h-5 w-5 text-white animate-pulse" />
+          </div>
+          <div>
+            <span className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
+              AI Processing Document
+            </span>
+            <p className="text-sm text-slate-600 dark:text-slate-400 font-normal mt-1">
+              Extracting patient information with advanced AI
+            </p>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <CheckCircle className="h-5 w-5 text-green-500" />
-            <span>PDF uploaded successfully</span>
+        <div className="space-y-6">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-blue-500/10 rounded-2xl blur-xl" />
+            <div className="relative bg-gradient-to-br from-slate-50/50 to-white/50 dark:from-slate-800/50 dark:to-slate-900/50 backdrop-blur-sm rounded-2xl p-8 border border-slate-200/50 dark:border-slate-700/50">
+              <div className="space-y-6">
+                <div className="flex items-center gap-4 p-4 bg-emerald-50/80 dark:bg-emerald-900/20 rounded-xl border border-emerald-200/50 dark:border-emerald-700/50">
+                  <div className="p-2 bg-emerald-500 rounded-lg">
+                    <CheckCircle className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-emerald-700 dark:text-emerald-400">PDF Upload Complete</p>
+                    <p className="text-sm text-emerald-600 dark:text-emerald-500">Document received and validated</p>
+                  </div>
+                </div>
+                
+                {isProcessing ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-4 p-4 bg-blue-50/80 dark:bg-blue-900/20 rounded-xl border border-blue-200/50 dark:border-blue-700/50">
+                      <div className="p-2 bg-blue-500 rounded-lg">
+                        <Loader2 className="h-5 w-5 text-white animate-spin" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-blue-700 dark:text-blue-400">AI Analysis in Progress</p>
+                        <p className="text-sm text-blue-600 dark:text-blue-500">Extracting patient information using advanced AI...</p>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-slate-50/50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-200/50 dark:border-slate-700/50">
+                      <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        <span>Processing with Gemini AI (with automatic retry on overload)</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-500 mt-1">
+                        <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                        <span>Fallback to regex extraction if needed</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-4 p-4 bg-emerald-50/80 dark:bg-emerald-900/20 rounded-xl border border-emerald-200/50 dark:border-emerald-700/50">
+                    <div className="p-2 bg-emerald-500 rounded-lg">
+                      <CheckCircle className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-emerald-700 dark:text-emerald-400">Extraction Complete</p>
+                      <p className="text-sm text-emerald-600 dark:text-emerald-500">Patient information successfully extracted</p>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-3 gap-4 pt-4">
+                  <div className="text-center">
+                    <div className="w-12 h-12 mx-auto bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-2">
+                      <FileText className="h-6 w-6 text-white" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Document</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Analyzed</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-12 h-12 mx-auto bg-gradient-to-br from-emerald-500 to-blue-600 rounded-xl flex items-center justify-center mb-2">
+                      <Sparkles className="h-6 w-6 text-white" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">AI Processing</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Active</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-12 h-12 mx-auto bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mb-2">
+                      <UserCheck className="h-6 w-6 text-white" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Data Ready</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Soon</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          {isProcessing ? (
-            <div className="flex items-center space-x-2">
-              <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
-              <span>Extracting patient information using AI...</span>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <span>Information extracted successfully</span>
-            </div>
-          )}
         </div>
       </CardContent>
     </Card>
@@ -386,36 +524,56 @@ export function UploadReferral() {
 
   const renderReviewStep = () => (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
+      <Card className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 shadow-2xl">
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <span>Review Extracted Information</span>
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg">
+                <CheckCircle className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <span className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
+                  Review Extracted Information
+                </span>
+                <p className="text-sm text-slate-600 dark:text-slate-400 font-normal mt-1">
+                  Verify and edit patient details before submission
+                </p>
+              </div>
             </CardTitle>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={() => setShowPreview(!showPreview)}
+                className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 hover:bg-white/80 dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-300 transition-all duration-200"
               >
                 <Eye className="h-4 w-4 mr-2" />
                 {showPreview ? 'Hide' : 'View'} PDF
               </Button>
-              <Button variant="outline" size="sm" onClick={resetForm}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={resetForm}
+                className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 hover:bg-red-50 dark:hover:bg-red-950/30 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+              >
                 <X className="h-4 w-4 mr-2" />
                 Start Over
               </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <CardContent className="space-y-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Patient Information */}
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2 mb-4">
-                <User className="h-5 w-5 text-blue-500" />
-                <h3 className="font-medium">Patient Information</h3>
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+                  <User className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">Patient Information</h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Personal and contact details</p>
+                </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -487,10 +645,15 @@ export function UploadReferral() {
             </div>
 
             {/* Medical Information */}
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2 mb-4">
-                <Stethoscope className="h-5 w-5 text-green-500" />
-                <h3 className="font-medium">Medical Information</h3>
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg">
+                  <Stethoscope className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">Medical Information</h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Clinical details and referral data</p>
+                </div>
               </div>
 
               <div>
@@ -561,30 +724,54 @@ export function UploadReferral() {
             </div>
           </div>
 
-          <div className="flex justify-end space-x-2 mt-6">
-            <Button variant="outline" onClick={resetForm}>
+          <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-slate-200/50 dark:border-slate-700/50">
+            <Button 
+              variant="ghost" 
+              onClick={resetForm}
+              className="px-6 py-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 hover:bg-red-50 dark:hover:bg-red-950/30 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 rounded-xl"
+            >
+              <X className="h-4 w-4 mr-2" />
               Cancel
             </Button>
-            <Button onClick={handleSubmit}>
+            <Button 
+              onClick={handleSubmit}
+              className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+            >
+              <UserCheck className="h-4 w-4 mr-2" />
               Add Patient to System
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* PDF Preview */}
+      {/* Enhanced PDF Preview */}
       {showPreview && pdfDataUrl && (
-        <Card>
-          <CardHeader>
-            <CardTitle>PDF Preview</CardTitle>
+        <Card className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 shadow-2xl">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl shadow-lg">
+                <Eye className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <span className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
+                  Document Preview
+                </span>
+                <p className="text-sm text-slate-600 dark:text-slate-400 font-normal mt-1">
+                  Original referral document
+                </p>
+              </div>
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="border rounded-lg overflow-hidden bg-gray-50">
-              <iframe
-                src={pdfDataUrl}
-                className="w-full h-96"
-                title="PDF Preview"
-              />
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-2xl blur-xl" />
+              <div className="relative border border-slate-200/50 dark:border-slate-700/50 rounded-2xl overflow-hidden bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-sm shadow-inner">
+                <iframe
+                  src={pdfDataUrl}
+                  className="w-full h-96"
+                  title="PDF Preview"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -593,31 +780,58 @@ export function UploadReferral() {
   )
 
   const renderCompleteStep = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <CheckCircle className="h-5 w-5 text-green-500" />
-          <span>Referral Added Successfully</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="text-center space-y-4">
-          <div className="space-y-2">
-            <h3 className="text-lg font-medium">Patient Added to System</h3>
-            <p className="text-gray-600">
-              {extractedData.fullName} has been successfully added to the patient referral system
+    <Card className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 shadow-2xl">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-3">
+          <div className="p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl shadow-lg">
+            <CheckCircle className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+              Success!
+            </span>
+            <p className="text-sm text-slate-600 dark:text-slate-400 font-normal mt-1">
+              Referral processed successfully
             </p>
           </div>
-          
-          <div className="space-y-2">
-            <Badge variant="outline" className="bg-green-50 text-green-700">
-              Patient added successfully
-            </Badge>
-          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-8">
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-green-500/10 rounded-2xl blur-xl" />
+          <div className="relative text-center space-y-6 p-8 bg-gradient-to-br from-slate-50/50 to-white/50 dark:from-slate-800/50 dark:to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-200/50 dark:border-slate-700/50">
+            <div className="space-y-4">
+              <div className="w-20 h-20 mx-auto bg-gradient-to-br from-emerald-500 to-green-600 rounded-full flex items-center justify-center shadow-2xl">
+                <CheckCircle className="h-10 w-10 text-white" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                  Patient Added Successfully!
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400 max-w-md mx-auto">
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">{extractedData.fullName}</span> has been successfully added to the patient referral management system
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-center gap-4">
+              <div className="flex items-center gap-2 px-4 py-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-full">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Status: Pending Review</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                <Activity className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                <span className="text-sm font-medium text-blue-700 dark:text-blue-400">System Updated</span>
+              </div>
+            </div>
 
-          <p className="text-sm text-gray-500">
-            This dialog will close automatically...
-          </p>
+            <div className="pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
+              <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                <span>This dialog will close automatically...</span>
+              </p>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

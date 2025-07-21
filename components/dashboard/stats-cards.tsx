@@ -4,8 +4,8 @@ import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useAppStore } from '@/lib/store'
-import { CheckCircle, XCircle, ArrowRightLeft, Clock, TrendingUp, TrendingDown, Activity, Users, FileText, BarChart3 } from 'lucide-react'
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from 'recharts'
+import { CheckCircle, XCircle, ArrowRightLeft, Clock, TrendingUp, TrendingDown, Activity, Users, BarChart3, Zap } from 'lucide-react'
+import { LineChart, Line, ResponsiveContainer, Tooltip, AreaChart, Area } from 'recharts'
 
 export function StatsCards() {
   const { patients } = useAppStore()
@@ -29,241 +29,303 @@ export function StatsCards() {
     [stats.rejected, stats.total]
   )
 
-  // Mock trend data for line charts
-  const acceptanceTrendData = useMemo(() => [
-    { month: 'Jan', rate: 78 },
-    { month: 'Feb', rate: 82 },
-    { month: 'Mar', rate: 85 },
-    { month: 'Apr', rate: 88 },
-    { month: 'May', rate: 92 },
-    { month: 'Jun', rate: acceptanceRate }
-  ], [acceptanceRate])
-  
-  // Pie chart data for status distribution
-  const pieData = useMemo(() => [
-    { name: 'Accepted', value: stats.accepted, color: '#10b981' },
-    { name: 'Rejected', value: stats.rejected, color: '#ef4444' },
-    { name: 'Transferred', value: stats.transferred, color: '#3b82f6' },
-    { name: 'Pending', value: stats.pending, color: '#f59e0b' }
+  // Enhanced trend data for charts
+  const trendData = useMemo(() => [
+    { name: 'Week 1', accepted: 45, rejected: 12, transferred: 8, pending: 15 },
+    { name: 'Week 2', accepted: 52, rejected: 10, transferred: 12, pending: 18 },
+    { name: 'Week 3', accepted: 48, rejected: 8, transferred: 15, pending: 12 },
+    { name: 'Week 4', accepted: stats.accepted, rejected: stats.rejected, transferred: stats.transferred, pending: stats.pending }
   ], [stats])
+  
+
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {/* Accepted Referrals - Large Card */}
-      <div className="md:col-span-2 lg:col-span-2">
-        <Card className="h-full min-h-[220px] bg-emerald-50 dark:bg-emerald-900/20 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 group overflow-hidden">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-emerald-600 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-200">
-                  <CheckCircle className="h-6 w-6 text-white" />
+    <div className="space-y-8">
+      {/* Main Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        {/* Accepted Referrals */}
+        <Card className="group relative overflow-hidden bg-gradient-to-br from-emerald-50 via-white to-emerald-50/30 dark:from-emerald-950/20 dark:via-slate-900 dark:to-emerald-950/10 border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <CardHeader className="pb-4 relative z-10">
+            <div className="flex items-start justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-emerald-500/20 rounded-2xl blur-xl" />
+                    <div className="relative p-3 bg-emerald-500 rounded-2xl shadow-lg">
+                      <CheckCircle className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Accepted Referrals
+                    </p>
+                    <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                      {stats.accepted}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-base font-medium text-slate-600 dark:text-slate-300">
-                    Accepted Referrals
-                  </CardTitle>
-                  <div className="text-4xl font-bold text-slate-900 dark:text-white mt-1">
-                    {stats.accepted}
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0 px-3 py-1">
+                    {acceptanceRate}% rate
+                  </Badge>
+                  <div className="flex items-center text-sm text-emerald-600 dark:text-emerald-400">
+                    <TrendingUp className="h-4 w-4 mr-1" />
+                    <span className="font-medium">+12%</span>
                   </div>
                 </div>
               </div>
-              <Badge className="bg-emerald-600 text-white border-0 px-3 py-1.5 text-sm font-medium shadow-md">
-                {acceptanceRate}%
-              </Badge>
             </div>
           </CardHeader>
-          <CardContent className="pt-0">
-            <div className="h-20 w-full mb-3">
+          <CardContent className="pt-0 relative z-10">
+            <div className="h-16">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={acceptanceTrendData}>
-                  <Line 
-                    type="monotone" 
-                    dataKey="rate" 
-                    stroke="#10b981" 
-                    strokeWidth={3} 
-                    dot={false}
-                    activeDot={{ r: 5, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
+                <AreaChart data={trendData}>
+                  <defs>
+                    <linearGradient id="acceptedGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <Area
+                    type="monotone"
+                    dataKey="accepted"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    fill="url(#acceptedGradient)"
                   />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                      border: 'none',
-                      borderRadius: '12px',
-                      boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
-                      fontSize: '12px'
-                    }}
-                    formatter={(value) => [`${value}%`, 'Acceptance Rate']}
-                  />
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex items-center text-sm text-white bg-emerald-600 px-3 py-1.5 rounded-lg">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              <span className="font-medium">+12% from last month</span>
-            </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Rejected Referrals - Medium Card */}
-      <div className="lg:col-span-1">
-        <Card className="h-full min-h-[220px] bg-red-50 dark:bg-red-900/20 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 group overflow-hidden">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="p-3 bg-red-600 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-200">
-                <XCircle className="h-6 w-6 text-white" />
-              </div>
-              <Badge className="bg-red-600 text-white border-0 px-3 py-1.5 text-sm font-medium shadow-md">
-                {rejectionRate}%
-              </Badge>
-            </div>
-            <div className="mt-3">
-              <CardTitle className="text-base font-medium text-slate-600 dark:text-slate-300 mb-1">
-                Rejected
-              </CardTitle>
-              <div className="text-3xl font-bold text-slate-900 dark:text-white">
-                {stats.rejected}
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="flex items-center text-sm text-white bg-red-600 px-3 py-1.5 rounded-lg">
-              <TrendingDown className="h-4 w-4 mr-2" />
-              <span className="font-medium">-8% this month</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Transferred Referrals - Medium Card */}
-      <div className="lg:col-span-1">
-        <Card className="h-full min-h-[220px] bg-blue-50 dark:bg-blue-900/20 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 group overflow-hidden">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="p-3 bg-blue-600 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-200">
-                <ArrowRightLeft className="h-6 w-6 text-white" />
-              </div>
-              <Badge className="bg-blue-600 text-white border-0 px-3 py-1.5 text-sm font-medium shadow-md">
-                {Math.round((stats.transferred / stats.total) * 100) || 0}%
-              </Badge>
-            </div>
-            <div className="mt-3">
-              <CardTitle className="text-base font-medium text-slate-600 dark:text-slate-300 mb-1">
-                Transferred
-              </CardTitle>
-              <div className="text-3xl font-bold text-slate-900 dark:text-white">
-                {stats.transferred}
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="flex items-center text-sm text-white bg-blue-600 px-3 py-1.5 rounded-lg">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              <span className="font-medium">+5% this month</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Pending Referrals - Medium Card */}
-      <div className="lg:col-span-1">
-        <Card className="h-full min-h-[220px] bg-amber-50 dark:bg-amber-900/20 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 group overflow-hidden">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="p-3 bg-amber-600 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-200">
-                <Clock className="h-6 w-6 text-white" />
-              </div>
-              <Badge className="bg-amber-600 text-white border-0 px-3 py-1.5 text-sm font-medium shadow-md">
-                {Math.round((stats.pending / stats.total) * 100) || 0}%
-              </Badge>
-            </div>
-            <div className="mt-3">
-              <CardTitle className="text-base font-medium text-slate-600 dark:text-slate-300 mb-1">
-                Pending
-              </CardTitle>
-              <div className="text-3xl font-bold text-slate-900 dark:text-white">
-                {stats.pending}
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="flex items-center text-sm text-white bg-amber-600 px-3 py-1.5 rounded-lg">
-              <Clock className="h-4 w-4 mr-2" />
-              <span className="font-medium">Awaiting review</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Overview Chart - Wide Card */}
-      <div className="md:col-span-2 lg:col-span-2">
-        <Card className="h-full min-h-[220px] bg-slate-100 dark:bg-slate-800/50 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 group overflow-hidden">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-slate-700 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-200">
-                <BarChart3 className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <CardTitle className="text-base font-medium text-slate-600 dark:text-slate-300">
-                  Status Distribution
-                </CardTitle>
-                <div className="text-3xl font-bold text-slate-900 dark:text-white mt-1">
-                  {stats.total}
-                  <span className="text-sm font-normal text-slate-500 dark:text-slate-400 ml-2">Total</span>
+        {/* Rejected Referrals */}
+        <Card className="group relative overflow-hidden bg-gradient-to-br from-red-50 via-white to-red-50/30 dark:from-red-950/20 dark:via-slate-900 dark:to-red-950/10 border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+          <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <CardHeader className="pb-4 relative z-10">
+            <div className="flex items-start justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-red-500/20 rounded-2xl blur-xl" />
+                    <div className="relative p-3 bg-red-500 rounded-2xl shadow-lg">
+                      <XCircle className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Rejected Referrals
+                    </p>
+                    <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                      {stats.rejected}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0 px-3 py-1">
+                    {rejectionRate}% rate
+                  </Badge>
+                  <div className="flex items-center text-sm text-red-600 dark:text-red-400">
+                    <TrendingDown className="h-4 w-4 mr-1" />
+                    <span className="font-medium">-8%</span>
+                  </div>
                 </div>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="pt-0">
-            <div className="h-24 w-full">
+          <CardContent className="pt-0 relative z-10">
+            <div className="h-16">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={30}
-                    outerRadius={45}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {pieData.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                      border: 'none',
-                      borderRadius: '12px',
-                      boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
-                      fontSize: '12px'
-                    }}
+                <AreaChart data={trendData}>
+                  <defs>
+                    <linearGradient id="rejectedGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <Area
+                    type="monotone"
+                    dataKey="rejected"
+                    stroke="#ef4444"
+                    strokeWidth={2}
+                    fill="url(#rejectedGradient)"
                   />
-                </PieChart>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-4 text-sm mt-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg">
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 bg-emerald-500 rounded-full" />
-                <span className="text-slate-700 dark:text-slate-300">Accepted</span>
+          </CardContent>
+        </Card>
+
+        {/* Transferred Referrals */}
+        <Card className="group relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-blue-50/30 dark:from-blue-950/20 dark:via-slate-900 dark:to-blue-950/10 border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <CardHeader className="pb-4 relative z-10">
+            <div className="flex items-start justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-blue-500/20 rounded-2xl blur-xl" />
+                    <div className="relative p-3 bg-blue-500 rounded-2xl shadow-lg">
+                      <ArrowRightLeft className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Transferred Referrals
+                    </p>
+                    <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                      {stats.transferred}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-0 px-3 py-1">
+                    {Math.round((stats.transferred / stats.total) * 100) || 0}% rate
+                  </Badge>
+                  <div className="flex items-center text-sm text-blue-600 dark:text-blue-400">
+                    <TrendingUp className="h-4 w-4 mr-1" />
+                    <span className="font-medium">+5%</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 bg-red-500 rounded-full" />
-                <span className="text-slate-700 dark:text-slate-300">Rejected</span>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 relative z-10">
+            <div className="h-16">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trendData}>
+                  <defs>
+                    <linearGradient id="transferredGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <Area
+                    type="monotone"
+                    dataKey="transferred"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    fill="url(#transferredGradient)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pending Referrals */}
+        <Card className="group relative overflow-hidden bg-gradient-to-br from-amber-50 via-white to-amber-50/30 dark:from-amber-950/20 dark:via-slate-900 dark:to-amber-950/10 border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <CardHeader className="pb-4 relative z-10">
+            <div className="flex items-start justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-amber-500/20 rounded-2xl blur-xl" />
+                    <div className="relative p-3 bg-amber-500 rounded-2xl shadow-lg">
+                      <Clock className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Pending Referrals
+                    </p>
+                    <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                      {stats.pending}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0 px-3 py-1">
+                    {Math.round((stats.pending / stats.total) * 100) || 0}% rate
+                  </Badge>
+                  <div className="flex items-center text-sm text-amber-600 dark:text-amber-400">
+                    <Clock className="h-4 w-4 mr-1" />
+                    <span className="font-medium">Review</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 bg-blue-500 rounded-full" />
-                <span className="text-slate-700 dark:text-slate-300">Transferred</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 bg-amber-500 rounded-full" />
-                <span className="text-slate-700 dark:text-slate-300">Pending</span>
-              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 relative z-10">
+            <div className="h-16">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trendData}>
+                  <defs>
+                    <linearGradient id="pendingGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <Area
+                    type="monotone"
+                    dataKey="pending"
+                    stroke="#f59e0b"
+                    strokeWidth={2}
+                    fill="url(#pendingGradient)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Summary Overview Card */}
+      <Card className="bg-gradient-to-r from-slate-50 via-white to-slate-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 border-0 shadow-2xl">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl shadow-lg">
+                <BarChart3 className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
+                  Referral Analytics Overview
+                </CardTitle>
+                <p className="text-slate-600 dark:text-slate-400 mt-1">
+                  Comprehensive insights into referral patterns and trends
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                  {stats.total}
+                </div>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Total Referrals</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                  {acceptanceRate}%
+                </div>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Success Rate</p>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="h-32">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trendData}>
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    border: 'none',
+                    borderRadius: '12px',
+                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
+                <Line type="monotone" dataKey="accepted" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }} />
+                <Line type="monotone" dataKey="rejected" stroke="#ef4444" strokeWidth={3} dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }} />
+                <Line type="monotone" dataKey="transferred" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }} />
+                <Line type="monotone" dataKey="pending" stroke="#f59e0b" strokeWidth={3} dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

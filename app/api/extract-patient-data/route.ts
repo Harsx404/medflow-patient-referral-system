@@ -126,12 +126,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Use Gemini to extract structured data with improved prompt
-    try {
-      console.log('Processing with Gemini AI...')
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
-      
-      const prompt = `
+    // Use Gemini to extract structured data with improved prompt and retry logic
+    let extractedData
+    let aiSuccess = false
+    const maxRetries = 3
+    let retryCount = 0
+    
+    while (!aiSuccess && retryCount < maxRetries) {
+      try {
+        console.log(`Processing with Gemini AI... (attempt ${retryCount + 1}/${maxRetries})`)
+        const model = genAI.getGenerativeModel({ 
+          model: 'gemini-2.0-flash',
+        })
+        
+        const prompt = `
 You are a medical data extraction assistant. Analyze the following medical referral document and extract the relevant information. 
 
 IMPORTANT: Return ONLY a valid JSON object with no additional text, comments, or markdown formatting.
@@ -165,15 +173,14 @@ Document text:
 ${extractedText}
 `
 
-      const result = await model.generateContent(prompt)
-      const response = await result.response
-      const text = response.text()
+        const result = await model.generateContent(prompt)
+        const response = await result.response
+        const text = response.text()
       
-      console.log('Received AI response, parsing JSON...')
-      
-      // Parse the JSON response with better error handling
-      let extractedData
-      try {
+        console.log('Received AI response, parsing JSON...')
+        
+        // Parse the JSON response with better error handling
+        try {
         // Clean the response more thoroughly
         let cleanedText = text.trim()
         
@@ -230,110 +237,130 @@ ${extractedText}
           }
         }
         
-        console.log('Successfully parsed and validated AI response')
-        
-      } catch (parseError) {
-        console.error('JSON parsing error:', parseError)
-        console.error('Raw AI response:', text)
-        
-        // Fallback to regex-based extraction
-        console.log('Using regex-based extraction as fallback...')
-        const regexData = parseReferralText(extractedText)
-        const validated = validateExtractedData(regexData)
-        
-        // Map regex results to expected format
-        extractedData = {
-          fullName: regexData.patientName || '',
-          dob: regexData.dateOfBirth || '',
-          email: regexData.email || '',
-          phone: regexData.patientPhone || '',
-          referredTo: regexData.referredTo || '',
-          gpName: regexData.referringDoctor || '',
-          insuranceProvider: '',
-          medicareNumber: regexData.medicareNumber || '',
-          referrerClinic: regexData.referrerClinic || '',
-          referralDate: regexData.referralDate || new Date().toISOString().split('T')[0],
-          patientAddress: regexData.patientAddress || '',
-          clinicAddress: regexData.clinicAddress || '',
-          reason: regexData.reasonPurpose || '',
-          diagnosis: regexData.diagnosis || ''
+          console.log('Successfully parsed and validated AI response')
+          aiSuccess = true
+          
+        } catch (parseError) {
+          console.error('JSON parsing error:', parseError)
+          console.error('Raw AI response:', text)
+          throw parseError
         }
         
-        console.log('Fallback extraction completed')
-      }
-
-      // Calculate confidence based on how many fields were extracted
-      const totalFields = 14
-      const filledFields = Object.values(extractedData).filter(value => 
-        value && String(value).trim().length > 0
-      ).length
-      const confidence = Math.round((filledFields / totalFields) * 100)
-
-      console.log(`Extraction completed with ${confidence}% confidence (${filledFields}/${totalFields} fields)`)
-
-      return NextResponse.json({
-        success: true,
-        data: extractedData,
-        rawText: extractedText.substring(0, 1000) + '...', // First 1000 chars for debugging
-        confidence: confidence,
-        extractionMethod: extractionMethod
-      })
-
-    } catch (aiError) {
-      console.error('AI processing error:', aiError)
-      
-      // Final fallback to regex-only extraction
-      console.log('Using regex-only extraction as final fallback...')
-      try {
-        const regexData = parseReferralText(extractedText)
-        const validated = validateExtractedData(regexData)
+      } catch (aiError) {
+        retryCount++
+        console.error(`AI processing error (attempt ${retryCount}):`, aiError)
         
-        const fallbackData = {
-          fullName: regexData.patientName || '',
-          dob: regexData.dateOfBirth || '',
-          email: regexData.email || '',
-          phone: regexData.patientPhone || '',
-          referredTo: regexData.referredTo || '',
-          gpName: regexData.referringDoctor || '',
-          insuranceProvider: '',
-          medicareNumber: regexData.medicareNumber || '',
-          referrerClinic: regexData.referrerClinic || '',
-          referralDate: regexData.referralDate || new Date().toISOString().split('T')[0],
-          patientAddress: regexData.patientAddress || '',
-          clinicAddress: regexData.clinicAddress || '',
-          reason: regexData.reasonPurpose || '',
-          diagnosis: regexData.diagnosis || ''
+        // Check if it's a 503 service overload error
+        if (aiError.message && aiError.message.includes('503') && aiError.message.includes('overloaded')) {
+          if (retryCount < maxRetries) {
+            const delay = Math.pow(2, retryCount) * 1000 + Math.random() * 1000 // Exponential backoff with jitter
+            console.log(`Service overloaded, retrying in ${delay}ms...`)
+            await new Promise(resolve => setTimeout(resolve, delay))
+            continue
+          }
         }
         
-        return NextResponse.json({
-          success: true,
-          data: fallbackData,
-          rawText: extractedText.substring(0, 1000) + '...',
-          confidence: validated.confidence,
-          extractionMethod: 'regex-only-fallback'
-        })
+        // If not a retryable error or max retries reached, break the loop
+        if (retryCount >= maxRetries) {
+          console.log('Max retries reached, falling back to regex extraction')
+          break
+        }
         
-      } catch (fallbackError) {
-        return NextResponse.json(
-          { 
-            error: 'All extraction methods failed. Please check your API key and document format.',
-            code: 'EXTRACTION_FAILED',
-            details: aiError instanceof Error ? aiError.message : 'Unknown AI error'
-          },
-          { status: 500 }
-        )
+        // For other errors, don't retry
+        break
       }
     }
+    
+    // If AI extraction failed, use regex-based extraction as fallback
+    if (!aiSuccess) {
+      console.log('AI extraction failed, using regex-based extraction as fallback...')
+      const regexData = parseReferralText(extractedText)
+      const validated = validateExtractedData(regexData)
+      
+      // Map regex results to expected format
+      extractedData = {
+        fullName: regexData.patientName || '',
+        dob: regexData.dateOfBirth || '',
+        email: regexData.email || '',
+        phone: regexData.patientPhone || '',
+        referredTo: regexData.referredTo || '',
+        gpName: regexData.referringDoctor || '',
+        insuranceProvider: '',
+        medicareNumber: regexData.medicareNumber || '',
+        referrerClinic: regexData.referrerClinic || '',
+        referralDate: regexData.referralDate || new Date().toISOString().split('T')[0],
+        patientAddress: regexData.patientAddress || '',
+        clinicAddress: regexData.clinicAddress || '',
+        reason: regexData.reasonPurpose || '',
+        diagnosis: regexData.diagnosis || ''
+      }
+      
+      console.log('Regex fallback extraction completed')
+    }
+
+    // Calculate confidence based on how many fields were extracted
+    const totalFields = 14
+    const filledFields = Object.values(extractedData).filter(value => 
+      value && String(value).trim().length > 0
+    ).length
+    const confidence = Math.round((filledFields / totalFields) * 100)
+
+    const finalExtractionMethod = aiSuccess ? 'gemini-ai' : 'regex-fallback'
+    console.log(`Extraction completed with ${confidence}% confidence (${filledFields}/${totalFields} fields) using ${finalExtractionMethod}`)
+
+    return NextResponse.json({
+      success: true,
+      data: extractedData,
+      rawText: extractedText.substring(0, 1000) + '...', // First 1000 chars for debugging
+      confidence: confidence,
+      extractionMethod: finalExtractionMethod,
+      aiRetries: aiSuccess ? retryCount : maxRetries
+    })
 
   } catch (error) {
     console.error('API Error:', error)
-    return NextResponse.json(
-      { 
-        error: 'Internal server error',
-        code: 'INTERNAL_ERROR',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+    
+    // Final fallback to regex-only extraction if everything else fails
+    try {
+      console.log('Using final regex-only extraction fallback...')
+      const regexData = parseReferralText('')
+      const validated = validateExtractedData(regexData)
+      
+      const emergencyFallbackData = {
+        fullName: '',
+        dob: '',
+        email: '',
+        phone: '',
+        referredTo: '',
+        gpName: '',
+        insuranceProvider: '',
+        medicareNumber: '',
+        referrerClinic: '',
+        referralDate: new Date().toISOString().split('T')[0],
+        patientAddress: '',
+        clinicAddress: '',
+        reason: '',
+        diagnosis: ''
+      }
+      
+      return NextResponse.json({
+        success: true,
+        data: emergencyFallbackData,
+        rawText: 'Emergency fallback - manual entry required',
+        confidence: 0,
+        extractionMethod: 'emergency-fallback',
+        warning: 'Extraction failed, manual data entry required'
+      })
+      
+    } catch (fallbackError) {
+      return NextResponse.json(
+        { 
+          error: 'Complete system failure. Please try again or enter data manually.',
+          code: 'COMPLETE_FAILURE',
+          details: error instanceof Error ? error.message : 'Unknown error'
+        },
+        { status: 500 }
+      )
+    }
   }
 }

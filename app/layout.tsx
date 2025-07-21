@@ -8,6 +8,7 @@ import { ASSETS } from '@/lib/assets'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   title: 'MedFlow - Patient Referral Dashboard',
   description: 'AI-powered patient referral management system for Grass Tree Group',
   keywords: ['medical', 'referral', 'patient', 'healthcare', 'dashboard'],
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'MedFlow - Patient Referral Dashboard',
     description: 'AI-powered patient referral management system',
-    url: 'https://medflow.grassTreeGroup.com',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
     siteName: 'MedFlow',
     images: [
       {

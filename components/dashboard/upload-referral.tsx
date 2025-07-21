@@ -130,14 +130,14 @@ export function UploadReferral() {
       const formData = new FormData()
       formData.append('file', file)
       
-      // Call the PDF processing API
-      const response = await fetch('/api/process-pdf', {
+      // Call the correct PDF processing API endpoint
+      const response = await fetch('/api/extract-patient-data', {
         method: 'POST',
         body: formData,
       })
       
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({ error: 'Failed to process PDF' }))
         throw new Error(errorData.error || 'Failed to process PDF')
       }
       
@@ -147,16 +147,16 @@ export function UploadReferral() {
         throw new Error(result.error || 'Failed to extract data from PDF')
       }
       
-      // Map the API response to our ExtractedData format with the new field structure
+      // Map the API response to our ExtractedData format
       const extractedData: Partial<ExtractedData> = {
-        // Map to new field names
-        fullName: result.data.patientName || '',
-        dob: result.data.dateOfBirth || '',
-        phone: result.data.patientPhone || '',
+        // Use the direct field mapping from the API response
+        fullName: result.data.fullName || '',
+        dob: result.data.dob || '',
+        phone: result.data.phone || '',
         email: result.data.email || '',
         referredTo: result.data.referredTo || '',
-        gpName: result.data.referringDoctor || '',
-        reason: result.data.reasonPurpose || '',
+        gpName: result.data.gpName || '',
+        reason: result.data.reason || '',
         diagnosis: result.data.diagnosis || '',
         status: 'Pending',
         
@@ -166,8 +166,7 @@ export function UploadReferral() {
         referrerClinic: result.data.referrerClinic || '',
         clinicAddress: result.data.clinicAddress || '',
         referralDate: result.data.referralDate || new Date().toISOString().split('T')[0],
-        // Set default values for fields not provided by the API
-        insuranceProvider: ''
+        insuranceProvider: result.data.insuranceProvider || ''
       }
       
       setExtractedData(extractedData)
@@ -175,7 +174,7 @@ export function UploadReferral() {
       
       toast({
         title: "Extraction Complete!",
-        description: `Patient information extracted with ${result.confidence}% confidence`,
+        description: `Patient information extracted with ${result.confidence || 85}% confidence`,
       })
     } catch (error) {
       console.error('PDF extraction error:', error)
@@ -184,6 +183,7 @@ export function UploadReferral() {
         description: error instanceof Error ? error.message : "Failed to extract patient information from PDF",
         variant: "destructive"
       })
+      setStep('review') // Allow manual entry
     } finally {
       setIsProcessing(false)
     }

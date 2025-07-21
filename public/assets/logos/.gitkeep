@@ -1,0 +1,6 @@
+# This file ensures the logos directory is tracked in Git
+# Add your logo files here following the naming convention:
+# - medflow-logo.svg (main logo)
+# - medflow-logo-dark.svg (dark theme variant)
+# - medflow-logo-light.svg (light theme variant)
+# - grass-tree-group-logo.png (parent company logo) 

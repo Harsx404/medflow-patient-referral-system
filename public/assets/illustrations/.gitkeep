@@ -1,0 +1,6 @@
+# This file ensures the illustrations directory is tracked in Git
+# Add your illustration files here:
+# - empty-state-no-patients.svg
+# - loading-medical-animation.svg
+# - error-illustration.svg
+# - success-checkmark.svg 

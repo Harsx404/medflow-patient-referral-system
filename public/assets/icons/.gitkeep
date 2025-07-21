@@ -1,0 +1,6 @@
+# This file ensures the icons directory is tracked in Git
+# Add your icon files here:
+# - favicon.ico
+# - app-icon-192x192.png
+# - app-icon-512x512.png
+# - medical-icons.svg 

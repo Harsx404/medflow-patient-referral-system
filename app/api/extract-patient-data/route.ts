@@ -251,7 +251,7 @@ ${extractedText}
         console.error(`AI processing error (attempt ${retryCount}):`, aiError)
         
         // Check if it's a 503 service overload error
-        if (aiError.message && aiError.message.includes('503') && aiError.message.includes('overloaded')) {
+        if (aiError instanceof Error && aiError.message && aiError.message.includes('503') && aiError.message.includes('overloaded')) {
           if (retryCount < maxRetries) {
             const delay = Math.pow(2, retryCount) * 1000 + Math.random() * 1000 // Exponential backoff with jitter
             console.log(`Service overloaded, retrying in ${delay}ms...`)

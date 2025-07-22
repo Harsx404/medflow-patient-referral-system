@@ -326,7 +326,7 @@ ${extractedText}
       createdAt: new Date().toISOString(),
       referralLetter: '',
       referralId: `REF-${Date.now()}`,
-      source: 'pdf-upload' as const,
+      source: 'admin-upload' as const,
       insuranceProvider: extractedData.insuranceProvider,
       urgencyLevel: 'Medium' as const,
       pdfExtractedData: {

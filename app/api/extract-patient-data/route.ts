@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { extractTextFromPDF, parseReferralText, validateExtractedData, preprocessText } from '@/lib/pdf-utils'
+import { addPatientToSheet } from '@/lib/google-sheets'
+import { v4 as uuidv4 } from 'uuid'
 
 // Force Node.js runtime for PDF processing
 export const runtime = 'nodejs'
@@ -147,7 +149,7 @@ IMPORTANT: Return ONLY a valid JSON object with no additional text, comments, or
 Required JSON structure:
 {
   "fullName": "Patient's full name",
-  "dob": "Date of birth in YYYY-MM-DD format (if unclear, use empty string)",
+  "dob": "Date of birth in YYYY-MM-DD format or similar (if unclear, use empty string)",
   "email": "Patient's email address",
   "phone": "Patient's phone number",
   "referredTo": "Doctor or specialist being referred to",
@@ -168,6 +170,7 @@ Rules:
 3. Extract only factual information from the document
 4. Do not make assumptions or add information not present in the text
 5. Ensure the response is valid JSON
+6. Be thourogh
 
 Document text:
 ${extractedText}
@@ -307,6 +310,49 @@ ${extractedText}
 
     const finalExtractionMethod = aiSuccess ? 'gemini-ai' : 'regex-fallback'
     console.log(`Extraction completed with ${confidence}% confidence (${filledFields}/${totalFields} fields) using ${finalExtractionMethod}`)
+
+    // Create patient object for Google Sheets
+    const patient = {
+      id: uuidv4(),
+      name: extractedData.fullName,
+      age: 0, // Will be calculated from DOB if available
+      gender: '',
+      email: extractedData.email,
+      contactNumber: extractedData.phone,
+      referringDoctor: extractedData.gpName,
+      assignedDoctor: extractedData.referredTo,
+      status: 'Pending' as const,
+      summary: extractedData.reason,
+      createdAt: new Date().toISOString(),
+      referralLetter: '',
+      referralId: `REF-${Date.now()}`,
+      source: 'pdf-upload' as const,
+      insuranceProvider: extractedData.insuranceProvider,
+      urgencyLevel: 'Medium' as const,
+      pdfExtractedData: {
+        referrerClinic: extractedData.referrerClinic,
+        clinicAddress: extractedData.clinicAddress,
+        referralDate: extractedData.referralDate,
+        patientName: extractedData.fullName,
+        dateOfBirth: extractedData.dob,
+        patientAddress: extractedData.patientAddress,
+        patientPhone: extractedData.phone,
+        medicareNumber: extractedData.medicareNumber,
+        reasonPurpose: extractedData.reason,
+        referredTo: extractedData.referredTo
+      }
+    }
+
+    // Add patient to Google Sheets if extraction was successful enough
+    if (confidence > 30) { // Only add if we have reasonable confidence
+      try {
+        await addPatientToSheet(patient)
+        console.log('Patient successfully added to Google Sheets')
+      } catch (error) {
+        console.error('Failed to add patient to Google Sheets:', error)
+        // Continue with the response even if Google Sheets fails
+      }
+    }
 
     return NextResponse.json({
       success: true,

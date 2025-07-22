@@ -137,7 +137,16 @@ export function CustomPatientForm({ referralId, onSubmitSuccess }: CustomPatient
          setReferralId(result.referralId)
          
          // Add patient to store
-         addPatient(result.patient)
+         try {
+           await addPatient(result.patient)
+         } catch (error) {
+           console.error('Error adding patient to Google Sheets:', error)
+           toast({
+             title: "Warning",
+             description: "Patient added locally but Google Sheets sync failed.",
+             variant: "default"
+           })
+         }
          
          toast({
            title: "Referral Submitted Successfully",

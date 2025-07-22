@@ -62,7 +62,7 @@ interface ExtractedData {
   contactNumber?: string
   medicalHistory?: string
   currentSymptoms?: string
-  urgencyLevel?: 'Low' | 'Medium' | 'High' | 'Emergency'
+  urgencyLevel?: string
   preferredDoctor?: string
   referringDoctor?: string
   reasonPurpose?: string
@@ -227,7 +227,7 @@ export function UploadReferral() {
     }))
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!extractedData.fullName || !extractedData.reason) {
       toast({
         title: "Missing Required Fields",
@@ -279,13 +279,12 @@ export function UploadReferral() {
       email: extractedData.email,
       medicalHistory: extractedData.diagnosis || '',
       currentSymptoms: extractedData.reason || '',
-      urgencyLevel: 'Normal', // No longer using urgencyLevel from form
+      urgencyLevel: extractedData.urgencyLevel || 'Normal',
       preferredDoctor: extractedData.referredTo,
-      insuranceProvider: '',
+      insuranceProvider: extractedData.insuranceProvider || '',
       pdfFileUrl: pdfDataUrl || undefined, // Store the PDF data URL
       referralId: referralId,
       source: 'admin-upload' as const,
-      dob: extractedData.dob, // Add DOB field
       // Additional extracted fields
       pdfExtractedData: {
         referrerClinic: extractedData.referrerClinic,
@@ -303,14 +302,23 @@ export function UploadReferral() {
         diagnosis: extractedData.diagnosis,
         referredTo: extractedData.referredTo,
         gpName: extractedData.gpName,
-        status: extractedData.status
+        status: 'Pending',
+        insuranceProvider: extractedData.insuranceProvider,
+        urgencyLevel: extractedData.urgencyLevel || 'Medium'
       }
     }
 
-    // Add patient to local store
-    addPatient(newPatient)
-    
-    // Patient added to local system only
+    // Add patient to local store and Google Sheets
+    try {
+      await addPatient(newPatient)
+    } catch (error) {
+      console.error('Failed to add patient:', error)
+      toast({
+        title: "Warning",
+        description: "Patient added locally but may not have been saved to Google Sheets",
+        variant: "destructive"
+      })
+    }
     
     toast({
       title: "Referral Added Successfully!",
@@ -380,7 +388,7 @@ export function UploadReferral() {
                 <Button 
                   onClick={() => fileInputRef.current?.click()} 
                   disabled={isUploading}
-                  className="relative px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  className="relative px-3 py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-l shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   {isUploading ? (
                     <>
@@ -695,13 +703,32 @@ export function UploadReferral() {
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="insuranceProvider">Insurance Provider</Label>
-                <Input
-                  id="insuranceProvider"
-                  value={extractedData.insuranceProvider || ''}
-                  onChange={(e) => handleFieldUpdate('insuranceProvider', e.target.value)}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="insuranceProvider">Insurance Provider</Label>
+                  <Input
+                    id="insuranceProvider"
+                    value={extractedData.insuranceProvider || ''}
+                    onChange={(e) => handleFieldUpdate('insuranceProvider', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="urgencyLevel">Urgency Level</Label>
+                  <Select
+                    value={extractedData.urgencyLevel || 'Medium'}
+                    onValueChange={(value) => handleFieldUpdate('urgencyLevel', value)}
+                  >
+                    <SelectTrigger id="urgencyLevel">
+                      <SelectValue placeholder="Select urgency level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Low">Low</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="High">High</SelectItem>
+                      <SelectItem value="Emergency">Emergency</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div>
@@ -841,15 +868,15 @@ export function UploadReferral() {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button 
-          className="w-full bg-blue-500 text-white rounded-xl p-4 text-left transition-all duration-200 shadow-sm hover:shadow-md"
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
           onClick={() => setIsOpen(true)}
         >
-          <div className="flex items-center justify-between w-full">
-            <p className="font-medium">Upload PDF</p>
-            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-              <Upload className="h-4 w-4" />
-            </div>
-          </div>
+          <div className="flex items-center justify-between w-full px-2 py-3 gap-4">
+             <p className="font-medium">Upload PDF</p>
+             <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+               <Upload className="h-4 w-4" />
+             </div>
+           </div>
         </Button>
       </DialogTrigger>
       

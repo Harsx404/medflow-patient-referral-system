@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
+import { addPatientToSheet } from '@/lib/google-sheets'
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,28 +23,42 @@ export async function POST(request: NextRequest) {
     // Create patient object
     const patient = {
       id: uuidv4(),
-      fullName: data.fullName,
-      dob: data.dob || '',
+      name: data.fullName, // Map fullName to name for consistency
+      age: data.age || 0,
+      gender: data.gender || '',
       email: data.email || '',
-      phone: data.phone || '',
-      referredTo: data.referredTo,
-      gpName: data.gpName,
-      insuranceProvider: data.insuranceProvider || '',
-      medicareNumber: data.medicareNumber || '',
-      referrerClinic: data.referrerClinic || '',
-      referralDate: data.referralDate || new Date().toISOString().split('T')[0],
-      patientAddress: data.patientAddress || '',
-      clinicAddress: data.clinicAddress || '',
-      reason: data.reason,
-      diagnosis: data.diagnosis,
-      status: 'pending' as const,
-      source: 'custom-form' as const,
+      contactNumber: data.phone || '',
+      referringDoctor: data.gpName,
+      assignedDoctor: data.referredTo,
+      status: 'Pending' as const,
+      summary: data.reason,
       createdAt: new Date().toISOString(),
-      referralId
+      referralLetter: '',
+      referralId,
+      source: 'custom-form' as const,
+      insuranceProvider: data.insuranceProvider || '',
+      urgencyLevel: data.urgencyLevel || 'Medium',
+      pdfExtractedData: {
+        referrerClinic: data.referrerClinic || '',
+        clinicAddress: data.clinicAddress || '',
+        referralDate: data.referralDate || new Date().toISOString().split('T')[0],
+        patientName: data.fullName,
+        dateOfBirth: data.dob || '',
+        patientAddress: data.patientAddress || '',
+        patientPhone: data.phone || '',
+        medicareNumber: data.medicareNumber || '',
+        reasonPurpose: data.reason,
+        referredTo: data.referredTo
+      }
     }
 
-    // In a real application, you would save this to a database
-    // For now, we'll return the patient data and let the frontend handle it
+    // Add patient to Google Sheets
+    try {
+      await addPatientToSheet(patient)
+    } catch (error) {
+      console.error('Failed to add patient to Google Sheets:', error)
+      // Continue with the response even if Google Sheets fails
+    }
     
     return NextResponse.json({
       success: true,

@@ -51,15 +51,9 @@ export function DashboardHeader() {
                 </div>
               </div>
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
-                    MedFlow Dashboard
-                  </h1>
-                  <div className="flex items-center gap-1 px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 rounded-full">
-                    <Sparkles className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Pro</span>
-                  </div>
-                </div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
+                  MedFlow Dashboard
+                </h1>
                 <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
                   Advanced Patient Referral Management System
                 </p>

@@ -19,7 +19,11 @@ import {
   FileText,
   Calendar,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Eye,
+  Download,
+  History,
+  X
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 
@@ -38,6 +42,7 @@ export default function DoctorDashboardPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [selectedPatient, setSelectedPatient] = useState<string | null>(null)
+  const [viewingPatient, setViewingPatient] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isAuthenticated || !currentDoctor) {
@@ -137,10 +142,10 @@ export default function DoctorDashboardPage() {
                 </Avatar>
                 <div>
                   <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                    Welcome, {currentDoctor.name}
+                    Grass Tree Group - Doctor Portal
                   </h1>
                   <p className="text-slate-600 dark:text-slate-400">
-                    {currentDoctor.specialization} • {currentDoctor.currentPatients} Active Patients
+                    Welcome, {currentDoctor.name} • {currentDoctor.specialization} • {currentDoctor.currentPatients} Active Patients
                   </p>
                 </div>
               </div>
@@ -256,6 +261,15 @@ export default function DoctorDashboardPage() {
                           Reject
                         </Button>
                         <Button
+                          onClick={() => setViewingPatient(patient.id)}
+                          size="sm"
+                          variant="outline"
+                          className="mr-2"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View Details
+                        </Button>
+                        <Button
                           onClick={() => setSelectedPatient(patient.id)}
                           size="sm"
                           variant="outline"
@@ -290,11 +304,21 @@ export default function DoctorDashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {acceptedPatients.map((patient) => (
                   <div key={patient.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:shadow-md transition-all">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="font-semibold text-slate-900 dark:text-white">{patient.name}</h3>
-                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                        {patient.status}
-                      </Badge>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-3">
+                        <h3 className="font-semibold text-slate-900 dark:text-white">{patient.name}</h3>
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                          {patient.status}
+                        </Badge>
+                      </div>
+                      <Button
+                        onClick={() => setViewingPatient(patient.id)}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View Details
+                      </Button>
                     </div>
                     <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
                       {patient.age}y • {patient.gender}
@@ -308,6 +332,240 @@ export default function DoctorDashboardPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Patient Details Modal */}
+        {viewingPatient && (() => {
+          const patient = patients.find(p => p.id === viewingPatient)
+          if (!patient) return null
+          
+          return (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+              <Card className="w-full max-w-4xl max-h-[90vh] overflow-hidden">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="flex items-center space-x-2">
+                    <FileText className="h-5 w-5" />
+                    <span>Patient Details - {patient.name}</span>
+                  </CardTitle>
+                  <Button
+                    onClick={() => setViewingPatient(null)}
+                    variant="ghost"
+                    size="sm"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="overflow-y-auto max-h-[calc(90vh-120px)]">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Patient Information */}
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-lg font-semibold mb-3 flex items-center">
+                          <Users className="h-5 w-5 mr-2" />
+                          Patient Information
+                        </h3>
+                        <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 space-y-2">
+                          <div className="flex justify-between">
+                            <span className="font-medium">Name:</span>
+                            <span>{patient.name}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Age:</span>
+                            <span>{patient.age} years</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Gender:</span>
+                            <span>{patient.gender}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Status:</span>
+                            <Badge className={`${
+                              patient.status === 'Accepted' ? 'bg-green-100 text-green-800' :
+                              patient.status === 'Pending' ? 'bg-orange-100 text-orange-800' :
+                              patient.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              {patient.status}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Referring Doctor:</span>
+                            <span>{patient.referringDoctor}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Assigned Doctor:</span>
+                            <span>{patient.assignedDoctor}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Extracted Data */}
+                      {patient.pdfExtractedData && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3 flex items-center">
+                            <FileText className="h-5 w-5 mr-2" />
+                            Extracted Information
+                          </h3>
+                          <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 space-y-2">
+                            <div className="flex justify-between">
+                              <span className="font-medium">Referrer Clinic:</span>
+                              <span>{patient.pdfExtractedData.referrerClinic}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="font-medium">Clinic Address:</span>
+                              <span className="text-right">{patient.pdfExtractedData.clinicAddress}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="font-medium">Phone:</span>
+                              <span>{patient.pdfExtractedData.phone}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="font-medium">Email:</span>
+                              <span>{patient.pdfExtractedData.email}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="font-medium">Referral Date:</span>
+                              <span>{patient.pdfExtractedData.referralDate}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="font-medium">Date of Birth:</span>
+                              <span>{patient.pdfExtractedData.dateOfBirth}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="font-medium">Patient Address:</span>
+                              <span className="text-right">{patient.pdfExtractedData.patientAddress}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="font-medium">Patient Phone:</span>
+                              <span>{patient.pdfExtractedData.patientPhone}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="font-medium">Medicare Number:</span>
+                              <span>{patient.pdfExtractedData.medicareNumber}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="font-medium">Referred To:</span>
+                              <span>{patient.pdfExtractedData.referredTo}</span>
+                            </div>
+                            <div className="mt-3">
+                              <span className="font-medium">Reason/Purpose:</span>
+                              <p className="mt-1 text-sm bg-white dark:bg-slate-700 p-2 rounded border">
+                                {patient.pdfExtractedData.reasonPurpose}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Timeline and PDF */}
+                    <div className="space-y-4">
+                      {/* Patient Timeline */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-3 flex items-center">
+                          <History className="h-5 w-5 mr-2" />
+                          Patient Timeline
+                        </h3>
+                        <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
+                          <div className="space-y-3">
+                            {patient.timeline?.map((event, index) => (
+                              <div key={index} className="flex items-start space-x-3">
+                                <div className={`w-3 h-3 rounded-full mt-1 ${
+                                  event.stage === 'Created' ? 'bg-blue-500' :
+                                  event.stage === 'Viewed' ? 'bg-yellow-500' :
+                                  event.stage === 'Accepted' ? 'bg-green-500' :
+                                  event.stage === 'Rejected' ? 'bg-red-500' :
+                                  'bg-purple-500'
+                                }`}></div>
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium text-sm">{event.stage}</span>
+                                    <span className="text-xs text-slate-500">
+                                      {new Date(event.timestamp).toLocaleString()}
+                                    </span>
+                                  </div>
+                                  {event.doctor && (
+                                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                                      by {event.doctor}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Original PDF */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-3 flex items-center">
+                          <Download className="h-5 w-5 mr-2" />
+                          Original Referral PDF
+                        </h3>
+                        <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-medium">Referral Letter</span>
+                            <Button
+                              onClick={() => window.open(patient.referralLetter, '_blank')}
+                              size="sm"
+                              variant="outline"
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              Download PDF
+                            </Button>
+                          </div>
+                          <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-8 text-center">
+                            <FileText className="h-12 w-12 mx-auto mb-2 text-slate-400" />
+                            <p className="text-sm text-slate-600 dark:text-slate-400">
+                              Click download to view the original referral PDF
+                            </p>
+                            <p className="text-xs text-slate-500 mt-1">
+                              {patient.referralLetter}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Summary */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-3">Clinical Summary</h3>
+                        <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
+                          <p className="text-sm">{patient.summary}</p>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons for Pending Patients */}
+                      {patient.status === 'Pending' && (
+                        <div className="flex space-x-2">
+                          <Button
+                            onClick={async () => {
+                              await handlePatientAction(patient.id, 'Accepted')
+                              setViewingPatient(null)
+                            }}
+                            className="bg-green-500 hover:bg-green-600 text-white flex-1"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Accept Patient
+                          </Button>
+                          <Button
+                            onClick={async () => {
+                              await handlePatientAction(patient.id, 'Rejected')
+                              setViewingPatient(null)
+                            }}
+                            variant="destructive"
+                            className="flex-1"
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Reject Patient
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )
+        })()}
 
         {/* Transfer Modal */}
         {selectedPatient && (

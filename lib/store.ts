@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { mockPatients, mockDoctors, mockLiveUpdates } from './mock-data'
-// Removed Google Sheets integration
 
 export interface TimelineEvent {
   stage: string
@@ -82,9 +81,8 @@ interface AppState {
   
   // Actions
   initializeStore: () => void
-  // Removed Google Sheets integration
   setPatients: (patients: Patient[]) => void
-  addPatient: (patient: Patient) => void
+  addPatient: (patient: Patient) => Promise<void>
   setDoctors: (doctors: Doctor[]) => void
   addLiveUpdate: (update: LiveUpdate) => void
   updatePatientStatus: (patientId: string, status: Patient['status'], doctorName: string) => Promise<void>
@@ -120,7 +118,7 @@ export const useAppStore = create<AppState>()(persist(
     
     setPatients: (patients) => set({ patients }),
     
-    addPatient: (patient) => {
+    addPatient: async (patient) => {
       set((state) => ({ 
         patients: [...state.patients, patient] 
       }))
@@ -137,6 +135,22 @@ export const useAppStore = create<AppState>()(persist(
       set((state) => ({
         liveUpdates: [newUpdate, ...state.liveUpdates].slice(0, 50)
       }))
+
+      // Add patient to Google Sheets via API
+      try {
+        await fetch('/api/google-sheets', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            action: 'addPatient',
+            patient
+          })
+        })
+      } catch (error) {
+        console.error('Failed to add patient to Google Sheets:', error)
+      }
     },
     
     setDoctors: (doctors) => set({ doctors }),
@@ -217,7 +231,27 @@ export const useAppStore = create<AppState>()(persist(
         return { patients: updatedPatients }
       })
       
-      // Status updated locally only
+      // Update status in Google Sheets via API
+      try {
+        const patient = get().patients.find(p => p.id === patientId)
+        if (patient) {
+          const practitionerName = patient.assignedDoctor || patient.referringDoctor || 'Unassigned'
+          await fetch('/api/google-sheets', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              action: 'updateStatus',
+              patientId,
+              status,
+              practitionerName
+            })
+          })
+        }
+      } catch (error) {
+        console.error('Failed to update patient status in Google Sheets:', error)
+      }
     },
     
     loginDoctor: (email, password) => {

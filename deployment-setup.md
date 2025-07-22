@@ -97,7 +97,17 @@ Add these in Vercel Dashboard → Project → Settings → Environment Variables
 GEMINI_API_KEY = your_actual_gemini_api_key
 NEXT_PUBLIC_APP_URL = https://your-project-name.vercel.app
 NODE_ENV = production
+
+# Google Sheets Integration (Required for spreadsheet functionality)
+GOOGLE_SHEETS_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY_HERE\n-----END PRIVATE KEY-----\n"
+GOOGLE_SHEETS_CLIENT_EMAIL = your-service-account@your-project.iam.gserviceaccount.com
+GOOGLE_SHEETS_SPREADSHEET_ID = your_spreadsheet_id_here
 ```
+
+**Important Notes for Google Sheets Variables:**
+- The private key must include the `\n` characters for line breaks and be wrapped in double quotes
+- Copy the exact values from your Google Cloud service account JSON file
+- Make sure to properly escape the private key for Vercel environment variables
 
 ### 4. Deploy
 1. Click "Deploy"
@@ -184,4 +194,4 @@ If you encounter issues:
 
 ---
 
-**Happy Deploying! 🚀** 
+**Happy Deploying! 🚀**

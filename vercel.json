@@ -11,6 +11,9 @@
     },
     "app/api/submit-patient-form/route.ts": {
       "maxDuration": 10
+    },
+    "app/api/google-sheets/**/*.ts": {
+      "maxDuration": 15
     }
   },
   "headers": [
@@ -38,4 +41,4 @@
       "destination": "/api/:path*"
     }
   ]
-} 
+}

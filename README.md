@@ -202,12 +202,21 @@ npm run build
 # Deploy using Vercel CLI or GitHub integration
 ```
 
+For detailed instructions on deploying with Google Sheets integration:
+1. Follow the [Google Sheets Setup Guide](./GOOGLE_SHEETS_SETUP.md) to create your service account and spreadsheet
+2. See the [Vercel Deployment with Google Sheets Guide](./VERCEL_SHEETS_SETUP.md) for configuring environment variables and testing the integration
+
 ## 🔐 Environment Variables
 
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `GEMINI_API_KEY` | Google Gemini AI API key for PDF processing | Yes |
 | `NEXT_PUBLIC_APP_URL` | Application base URL | No |
+| `GOOGLE_SHEETS_PRIVATE_KEY` | Google Sheets API private key | Yes (for Sheets) |
+| `GOOGLE_SHEETS_CLIENT_EMAIL` | Google service account email | Yes (for Sheets) |
+| `GOOGLE_SHEETS_SPREADSHEET_ID` | Google Spreadsheet ID | Yes (for Sheets) |
+
+See [GOOGLE_SHEETS_SETUP.md](./GOOGLE_SHEETS_SETUP.md) for detailed instructions on setting up Google Sheets integration.
 
 ## 📝 Development Notes
 

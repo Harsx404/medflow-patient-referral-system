@@ -1,8 +1,9 @@
 "use client"
 
-import { Bell, Moon, Sun, Settings, Sparkles, Activity, User, LogOut } from 'lucide-react'
+import { Bell, Moon, Sun, Settings, Sparkles, Activity, User, LogOut, Shield, Globe } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -195,6 +196,18 @@ export function DashboardHeader() {
                 <DropdownMenuItem className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50/80 dark:hover:bg-slate-800/80">
                   <User className="h-4 w-4" />
                   Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50/80 dark:hover:bg-slate-800/80">
+                  <Link href="/audit-logs">
+                    <Shield className="h-4 w-4" />
+                    Audit Logs
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50/80 dark:hover:bg-slate-800/80">
+                  <Link href="/halaxy-test">
+                    <Globe className="h-4 w-4" />
+                    Halaxy Integration
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-slate-200/50 dark:bg-slate-700/50" />
                 <DropdownMenuItem className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30">

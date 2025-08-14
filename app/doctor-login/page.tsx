@@ -9,6 +9,7 @@ import { useAppStore } from '@/lib/store'
 import { mockDoctors } from '@/lib/mock-data'
 import { UserCheck, Lock, Mail } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
+import { HomeButton } from '@/components/ui/home-button'
 
 export default function DoctorLoginPage() {
   const [email, setEmail] = useState('')
@@ -34,6 +35,36 @@ export default function DoctorLoginPage() {
           title: "Login Successful",
           description: "Welcome to your doctor portal!",
         })
+        
+        // Log the login action to audit trail
+        try {
+          const doctorData = useAppStore.getState().currentDoctor
+          
+          if (doctorData) {
+            // Log the login using the API endpoint
+            await fetch('/api/action-logs', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userId: doctorData.id,
+                userName: doctorData.name,
+                userRole: 'doctor',
+                action: 'user_login',
+                resourceType: 'system',
+                resourceId: doctorData.id,
+                resourceName: doctorData.name,
+                details: `Doctor ${doctorData.name} logged in`,
+                ipAddress: '127.0.0.1', // In a real app, get from request
+                userAgent: navigator.userAgent
+              }),
+            })
+          }
+        } catch (logError) {
+          console.error('Error logging login action:', logError)
+        }
+        
         router.push('/doctor-dashboard')
       } else {
         toast({
@@ -54,8 +85,12 @@ export default function DoctorLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-blue-50 dark:bg-slate-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-2xl border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+    <div className="min-h-screen bg-blue-50 dark:bg-slate-900 p-4">
+      <div className="container mx-auto max-w-md">
+        <div className="mb-4 flex justify-end">
+          <HomeButton />
+        </div>
+        <Card className="w-full shadow-2xl border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
         <CardHeader className="text-center pb-6">
           <div className="mx-auto mb-4 p-3 rounded-full bg-blue-500 text-white w-fit">
             <UserCheck className="h-8 w-8" />
@@ -126,6 +161,7 @@ export default function DoctorLoginPage() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }

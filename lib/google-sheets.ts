@@ -1,26 +1,38 @@
 import { google } from 'googleapis'
 import { Patient } from './store'
+import { AuditService } from './audit-service'
 
 // Google Sheets configuration
 const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_SPREADSHEET_ID
-const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_SHEETS_PRIVATE_KEY?.replace(/\\n/g, '\n')
+const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_SHEETS_PRIVATE_KEY?.replace(/\n/g, '\n')
 const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_SHEETS_CLIENT_EMAIL
 
-// Initialize Google Sheets API
-const auth = new google.auth.GoogleAuth({
-  credentials: {
-    client_email: GOOGLE_CLIENT_EMAIL,
-    private_key: GOOGLE_PRIVATE_KEY,
-  },
-  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-})
+// Check if Google Sheets is configured
+const isGoogleSheetsConfigured = SPREADSHEET_ID && GOOGLE_PRIVATE_KEY && GOOGLE_CLIENT_EMAIL
 
-const sheets = google.sheets({ version: 'v4', auth })
+// Initialize Google Sheets API only if configured
+let auth: any = null
+let sheets: any = null
+
+if (isGoogleSheetsConfigured) {
+  try {
+    auth = new google.auth.GoogleAuth({
+      credentials: {
+        client_email: GOOGLE_CLIENT_EMAIL,
+        private_key: GOOGLE_PRIVATE_KEY,
+      },
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    })
+    sheets = google.sheets({ version: 'v4', auth })
+  } catch (error) {
+    console.error('Failed to initialize Google Sheets API:', error)
+  }
+}
 
 // Helper function to get or create sheet by practitioner name
 export async function getOrCreateSheet(practitionerName: string): Promise<string> {
-  if (!SPREADSHEET_ID) {
-    throw new Error('Google Sheets ID not configured')
+  if (!isGoogleSheetsConfigured || !SPREADSHEET_ID || !sheets) {
+    throw new Error('Google Sheets not configured or not initialized')
   }
 
   try {
@@ -30,7 +42,7 @@ export async function getOrCreateSheet(practitionerName: string): Promise<string
     })
 
     const existingSheet = response.data.sheets?.find(
-      sheet => sheet.properties?.title === practitionerName
+      (sheet: any) => sheet.properties?.title === practitionerName
     )
 
     if (existingSheet) {
@@ -94,9 +106,9 @@ export async function getOrCreateSheet(practitionerName: string): Promise<string
 }
 
 // Add patient data to Google Sheets
-export async function addPatientToSheet(patient: Patient): Promise<void> {
-  if (!SPREADSHEET_ID) {
-    console.warn('Google Sheets ID not configured, skipping sheet update')
+export async function addPatientToSheet(patient: Patient, user?: { id: string, name: string, role: string }): Promise<void> {
+  if (!isGoogleSheetsConfigured || !SPREADSHEET_ID || !sheets) {
+    console.warn('Google Sheets not configured, skipping sheet update')
     return
   }
 
@@ -139,6 +151,11 @@ export async function addPatientToSheet(patient: Patient): Promise<void> {
     })
 
     console.log(`Patient ${patient.name} added to sheet: ${sheetName}`)
+    
+    // Log audit trail for sheet update
+    if (user) {
+      await AuditService.logSheetUpdate(sheetName, user, `Patient ${patient.name} added`)
+    }
   } catch (error) {
     console.error('Error adding patient to sheet:', error)
     // Don't throw error to prevent form submission failure
@@ -149,10 +166,11 @@ export async function addPatientToSheet(patient: Patient): Promise<void> {
 export async function updatePatientStatusInSheet(
   patientId: string,
   newStatus: string,
-  practitionerName: string
+  practitionerName: string,
+  user?: { id: string, name: string, role: string }
 ): Promise<void> {
-  if (!SPREADSHEET_ID) {
-    console.warn('Google Sheets ID not configured, skipping sheet update')
+  if (!isGoogleSheetsConfigured || !SPREADSHEET_ID || !sheets) {
+    console.warn('Google Sheets not configured, skipping sheet update')
     return
   }
 
@@ -214,6 +232,11 @@ export async function updatePatientStatusInSheet(
     })
 
     console.log(`Patient ${patientId} status updated to ${newStatus} in sheet: ${sheetName}`)
+    
+    // Log audit trail for sheet update
+    if (user) {
+      await AuditService.logSheetUpdate(sheetName, user, `Patient ${patientId} status updated to ${newStatus}`)
+    }
   } catch (error) {
     console.error('Error updating patient status in sheet:', error)
     // Don't throw error to prevent status update failure
@@ -225,22 +248,31 @@ export async function movePatientToSheet(
   patientId: string,
   fromPractitioner: string,
   toPractitioner: string,
-  patientData: Patient
+  patientData: Patient,
+  user?: { id: string, name: string, role: string }
 ): Promise<void> {
-  if (!SPREADSHEET_ID) {
-    console.warn('Google Sheets ID not configured, skipping sheet update')
+  if (!isGoogleSheetsConfigured || !SPREADSHEET_ID || !sheets) {
+    console.warn('Google Sheets not configured, skipping sheet update')
     return
   }
 
   try {
     // Remove from old sheet
-    await removePatientFromSheet(patientId, fromPractitioner)
+    await removePatientFromSheet(patientId, fromPractitioner, user)
     
     // Add to new sheet
     const updatedPatient = { ...patientData, assignedDoctor: toPractitioner }
-    await addPatientToSheet(updatedPatient)
+    await addPatientToSheet(updatedPatient, user)
 
     console.log(`Patient ${patientId} moved from ${fromPractitioner} to ${toPractitioner}`)
+    // Log audit trail for move
+    if (user) {
+      await AuditService.logSheetUpdate(
+        toPractitioner,
+        user,
+        `Patient ${patientId} moved from ${fromPractitioner} to ${toPractitioner}`
+      )
+    }
   } catch (error) {
     console.error('Error moving patient between sheets:', error)
   }
@@ -249,10 +281,11 @@ export async function movePatientToSheet(
 // Remove patient from sheet
 export async function removePatientFromSheet(
   patientId: string,
-  practitionerName: string
+  practitionerName: string,
+  user?: { id: string, name: string, role: string }
 ): Promise<void> {
-  if (!SPREADSHEET_ID) {
-    console.warn('Google Sheets ID not configured, skipping sheet update')
+  if (!isGoogleSheetsConfigured || !SPREADSHEET_ID || !sheets) {
+    console.warn('Google Sheets not configured, skipping sheet update')
     return
   }
 
@@ -302,6 +335,10 @@ export async function removePatientFromSheet(
     })
 
     console.log(`Patient ${patientId} removed from sheet: ${sheetName}`)
+    // Log audit trail for removal
+    if (user) {
+      await AuditService.logSheetUpdate(sheetName, user, `Patient ${patientId} removed from sheet`)
+    }
   } catch (error) {
     console.error('Error removing patient from sheet:', error)
   }

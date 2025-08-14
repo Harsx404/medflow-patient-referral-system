@@ -26,6 +26,7 @@ import {
   X
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
+import { HomeButton } from '@/components/ui/home-button'
 
 export default function DoctorDashboardPage() {
   const { 
@@ -79,8 +80,40 @@ export default function DoctorDashboardPage() {
   const acceptedPatients = myPatients.filter(p => p.status === 'Accepted')
   const otherDoctors = doctors.filter(d => d.id !== currentDoctor.id)
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Save the doctor info before logging out
+    const doctorInfo = currentDoctor
+    
+    // Perform logout
     logoutDoctor()
+    
+    // Log the logout action to audit trail
+    if (doctorInfo) {
+      try {
+        // Log the logout using the API endpoint
+        await fetch('/api/action-logs', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: doctorInfo.id,
+            userName: doctorInfo.name,
+            userRole: 'doctor',
+            action: 'user_logout',
+            resourceType: 'system',
+            resourceId: doctorInfo.id,
+            resourceName: doctorInfo.name,
+            details: `Doctor ${doctorInfo.name} logged out`,
+            ipAddress: '127.0.0.1', // In a real app, get from request
+            userAgent: navigator.userAgent
+          }),
+        })
+      } catch (error) {
+        console.error('Error logging logout action:', error)
+      }
+    }
+    
     toast({
       title: "Logged Out",
       description: "You have been successfully logged out.",
@@ -110,7 +143,46 @@ export default function DoctorDashboardPage() {
       setPatients(updatedPatients)
     }
     
+    // Update patient status in store
     await updatePatientStatus(patientId, action, currentDoctor.name)
+    
+    // Log the specific action directly to audit trail as well
+    try {
+      // Determine which type of action for audit log
+      let auditAction = '';
+      let resourceType = 'patient';
+      
+      if (action === 'Accepted') {
+        auditAction = 'patient_assigned';
+      } else if (action === 'Rejected') {
+        auditAction = 'referral_rejected';
+        resourceType = 'referral';
+      } else if (action === 'Transferred') {
+        auditAction = 'patient_transferred';
+      }
+      
+      // Log the action using the API endpoint
+      await fetch('/api/action-logs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentDoctor.id,
+          userName: currentDoctor.name,
+          userRole: 'doctor',
+          action: auditAction,
+          resourceType: resourceType,
+          resourceId: patient.id,
+          resourceName: patient.name,
+          details: `Patient ${patient.name} was ${action.toLowerCase()}${action === 'Transferred' ? ` to ${transferDoctor}` : ' by ' + currentDoctor.name}`,
+          ipAddress: '127.0.0.1', // In a real app, get from request
+          userAgent: navigator.userAgent
+        }),
+      })
+    } catch (error) {
+      console.error('Error logging patient action:', error)
+    }
     
     toast({
       title: `Patient ${action}`,
@@ -135,6 +207,7 @@ export default function DoctorDashboardPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
+                <HomeButton variant="outline" size="sm" />
                 <Avatar className="h-12 w-12 ring-2 ring-blue-200 dark:ring-blue-800">
                   <AvatarFallback className="bg-blue-500 text-white font-semibold">
                     {initials}

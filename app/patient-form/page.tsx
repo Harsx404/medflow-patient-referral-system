@@ -3,11 +3,17 @@
 import { CustomPatientForm } from '@/components/dashboard/custom-patient-form'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { FileText, Shield, Clock } from 'lucide-react'
+import { HomeButton } from '@/components/ui/home-button'
 
 export default function PatientFormPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-4xl">
+        {/* Home Button */}
+        <div className="flex justify-end mb-4">
+          <HomeButton />
+        </div>
+        
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">

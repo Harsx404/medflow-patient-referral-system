@@ -1,7 +1,13 @@
 "use client"
 
 import { useState } from 'react'
-import { useAppStore } from '@/lib/store'
+import { useAppStore }               <HomeButton variant="ghost" size="sm" />
+              <Link href="/">
+                <Button variant="ghost" size="sm" className="hover:bg-slate-100 dark:hover:bg-slate-800">
+                  <ArrowLeft className="h-5 w-5 mr-2" />
+                  Back to Dashboard
+                </Button>
+              </Link>@/lib/store'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Search, Filter, Clock, Activity } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import Link from 'next/link'
+import { HomeButton } from '@/components/ui/home-button'
 
 export default function NotificationsPage() {
   const { liveUpdates } = useAppStore()
@@ -70,6 +77,7 @@ export default function NotificationsPage() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
+              <HomeButton variant="ghost" size="sm" />
               <Link href="/">
                 <Button variant="ghost" size="sm" className="hover:bg-slate-100 dark:hover:bg-slate-800">
                   <ArrowLeft className="h-4 w-4 mr-2" />

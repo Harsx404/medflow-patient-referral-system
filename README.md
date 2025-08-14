@@ -95,12 +95,24 @@ gtgfrontend/
 - npm or yarn
 - Google Gemini AI API key (for PDF processing)
 
-### Installation
+### Quick Start
+
+**Option 1: Automated Setup (Recommended)**
+```bash
+# On Windows
+quick-start.bat
+
+# On macOS/Linux
+chmod +x quick-start.sh
+./quick-start.sh
+```
+
+**Option 2: Manual Setup**
 
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd gtgfrontend
+   cd medflow-patient-referral-system
    ```
 
 2. **Install dependencies**
@@ -110,21 +122,30 @@ gtgfrontend/
 
 3. **Environment Setup**
    ```bash
-   cp .env.example .env.local
+   cp env.example .env.local
    ```
    
    Add your environment variables:
    ```env
    GEMINI_API_KEY=your_gemini_api_key_here
+   NEXT_PUBLIC_APP_URL=http://localhost:3000
    ```
 
-4. **Run the development server**
+4. **Get Google Gemini AI API Key**
+   - Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - Create a new API key
+   - Add it to your `.env.local` file
+
+5. **Run the development server**
    ```bash
    npm run dev
    ```
 
-5. **Open your browser**
+6. **Open your browser**
    Navigate to `http://localhost:3000`
+
+### 📚 Detailed Setup
+For comprehensive setup instructions, see [SETUP_GUIDE.md](./SETUP_GUIDE.md)
 
 ## 📱 Key Pages & Features
 
@@ -212,11 +233,32 @@ For detailed instructions on deploying with Google Sheets integration:
 |----------|-------------|----------|
 | `GEMINI_API_KEY` | Google Gemini AI API key for PDF processing | Yes |
 | `NEXT_PUBLIC_APP_URL` | Application base URL | No |
-| `GOOGLE_SHEETS_PRIVATE_KEY` | Google Sheets API private key | Yes (for Sheets) |
-| `GOOGLE_SHEETS_CLIENT_EMAIL` | Google service account email | Yes (for Sheets) |
-| `GOOGLE_SHEETS_SPREADSHEET_ID` | Google Spreadsheet ID | Yes (for Sheets) |
+| `GOOGLE_SHEETS_PRIVATE_KEY` | Google Sheets API private key | No (for Sheets) |
+| `GOOGLE_SHEETS_CLIENT_EMAIL` | Google service account email | No (for Sheets) |
+| `GOOGLE_SHEETS_SPREADSHEET_ID` | Google Spreadsheet ID | No (for Sheets) |
 
-See [GOOGLE_SHEETS_SETUP.md](./GOOGLE_SHEETS_SETUP.md) for detailed instructions on setting up Google Sheets integration.
+## 🚀 Recent Improvements
+
+### ✅ **Fixed Issues**
+- **Graceful Degradation**: Google Sheets integration now works without configuration
+- **PDF Processing**: Enhanced error handling and fallback mechanisms
+- **Environment Setup**: Comprehensive setup guides and automated scripts
+- **Documentation**: Complete setup and improvement documentation
+
+### 🔧 **Enhanced Features**
+- **Quick Start Scripts**: Automated setup for Windows and Unix systems
+- **Error Handling**: Better error messages and recovery mechanisms
+- **Configuration**: Flexible environment variable management
+- **User Experience**: Improved setup process and documentation
+
+### 📚 **Documentation**
+- **SETUP_GUIDE.md**: Comprehensive setup instructions
+- **IMPROVEMENT_PLAN.md**: Detailed roadmap for future enhancements
+- **Quick Start Scripts**: Automated setup for different platforms
+- **Environment Templates**: Pre-configured environment files
+
+For detailed setup instructions, see [SETUP_GUIDE.md](./SETUP_GUIDE.md)
+For improvement roadmap, see [IMPROVEMENT_PLAN.md](./IMPROVEMENT_PLAN.md)
 
 ## 📝 Development Notes
 

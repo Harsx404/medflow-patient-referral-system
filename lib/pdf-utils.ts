@@ -18,8 +18,8 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
       throw new Error('Invalid PDF file: File does not have PDF signature')
     }
     
-    // Use require for pdf-parse with webpack externals configuration
-    const pdfParse = require('pdf-parse')
+    // Use dynamic import for pdf-parse
+    const pdfParse = (await import('pdf-parse')).default
     
     console.log('PDF-parse library loaded successfully')
     

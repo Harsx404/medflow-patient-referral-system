@@ -6,9 +6,11 @@ import { useAppStore } from '@/lib/store'
 import { mockPatients, mockDoctors, mockLiveUpdates } from '@/lib/mock-data'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { StatsCards } from '@/components/dashboard/stats-cards'
+import { HomeButton } from '@/components/ui/home-button'
 import { DoctorsPanel } from '@/components/dashboard/doctors-panel'
 import { LiveUpdatesPanel } from '@/components/dashboard/live-updates-panel'
 import { PatientsTable } from '@/components/dashboard/patients-table'
+import { HalaxyStatusPanel } from '@/components/dashboard/halaxy-status-panel'
 import { NewReferralQR } from '@/components/dashboard/qr-code-generator'
 // Removed Google Forms integration
 import { UploadReferral } from '@/components/dashboard/upload-referral'
@@ -77,6 +79,11 @@ export default function Dashboard() {
       <DashboardHeader />
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Home Button */}
+        <div className="flex justify-end mb-4">
+          <HomeButton variant="outline" size="sm" />
+        </div>
+      
         {/* Modern Header Section */}
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -164,9 +171,9 @@ export default function Dashboard() {
 
         {/* Main Content Bento Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Doctors Panel */}
-          <div className="lg:col-span-1">
-            <Card className="h-full bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-0 shadow-xl">
+          <div className="lg:col-span-1 space-y-6">
+            {/* Doctors Panel */}
+            <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-0 shadow-xl">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Users className="h-5 w-5 text-emerald-600" />
@@ -177,6 +184,9 @@ export default function Dashboard() {
                 <DoctorsPanel />
               </CardContent>
             </Card>
+            
+            {/* Halaxy Status Panel */}
+            <HalaxyStatusPanel className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-0 shadow-xl" />
           </div>
           
           {/* Live Updates Panel */}

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { mockPatients, mockDoctors, mockLiveUpdates } from './mock-data'
+import { AuditService } from './audit-service'
 
 export interface TimelineEvent {
   stage: string
@@ -136,6 +137,23 @@ export const useAppStore = create<AppState>()(persist(
         liveUpdates: [newUpdate, ...state.liveUpdates].slice(0, 50)
       }))
 
+      // Log audit trail
+      try {
+        const currentUser = typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null
+        const userRole = typeof window !== 'undefined' ? localStorage.getItem('userRole') : null
+        
+        if (currentUser && userRole) {
+          const user = {
+            id: currentUser,
+            name: currentUser,
+            role: userRole
+          }
+          await AuditService.logPatientCreated(patient, user)
+        }
+      } catch (error) {
+        console.error('Failed to log patient creation:', error)
+      }
+
       // Add patient to Google Sheets via API
       try {
         await fetch('/api/google-sheets', {
@@ -222,6 +240,20 @@ export const useAppStore = create<AppState>()(persist(
             timestamp: new Date().toISOString()
           }
           
+          // Log audit trail for status change
+          try {
+            if (currentUser && userRole) {
+              const user = {
+                id: currentUser,
+                name: currentUser,
+                role: userRole
+              }
+              AuditService.logPatientStatusChanged(patient, patient.status, status, user)
+            }
+          } catch (error) {
+            console.error('Failed to log status change:', error)
+          }
+          
           return {
             patients: updatedPatientsWithTimeline,
             liveUpdates: [newLiveUpdate, ...state.liveUpdates].slice(0, 50)
@@ -263,6 +295,19 @@ export const useAppStore = create<AppState>()(persist(
           currentDoctor: doctor, 
           isAuthenticated: true
         })
+        
+        // Log user login
+        try {
+          const user = {
+            id: doctor.id,
+            name: doctor.name,
+            role: 'doctor'
+          }
+          AuditService.logUserLogin(user)
+        } catch (error) {
+          console.error('Failed to log user login:', error)
+        }
+        
         return true
       }
       
@@ -270,6 +315,21 @@ export const useAppStore = create<AppState>()(persist(
     },
     
     logoutDoctor: () => {
+      // Log user logout before clearing
+      try {
+        const currentDoctor = get().currentDoctor
+        if (currentDoctor) {
+          const user = {
+            id: currentDoctor.id,
+            name: currentDoctor.name,
+            role: 'doctor'
+          }
+          AuditService.logUserLogout(user)
+        }
+      } catch (error) {
+        console.error('Failed to log user logout:', error)
+      }
+      
       // Clear user role and current user from local storage
       localStorage.removeItem('userRole')
       localStorage.removeItem('currentUser')
